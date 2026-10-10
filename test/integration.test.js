@@ -130,9 +130,13 @@ test('doPost validates JSON, boolean consent, locks and failed writes', () => {
 test('tarot markup, CSS, card content and game rendering remain unchanged', () => {
   const before = execFileSync('git', ['show', 'e33269e5ba4b72cc51760015c70a9cbe80c72586:index.html'], { encoding: 'utf8' });
   const after = readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.equal(after.split('<script>')[0], before.split('<script>')[0]);
+  const originalMarkup = after.replace('for="leadName">Nombre y apellido</label>', 'for="leadName">Tu nombre</label>')
+    .replace('placeholder="Ingresa tu nombre y apellido"', 'placeholder="¿Cómo te llamas?"');
+  assert.equal(originalMarkup.split('<script>')[0], before.split('<script>')[0]);
   const js = after.split('<script>')[1].split('</script>')[0]; new vm.Script(js);
   assert.ok(js.includes('receipt.stored!==true'));
-  assert.equal(after.split('const startReading=')[1].split("$('#leadForm').onsubmit")[0],
+  // The contact destination is configurable; card selection and rendering remain unchanged.
+  assert.equal(after.replace("https://wa.me/593978962660?text=", "https://wa.me/?text=")
+    .split('const startReading=')[1].split("$('#leadForm').onsubmit")[0],
     before.split('const startReading=')[1].split("$('#leadForm').onsubmit")[0]);
 });
