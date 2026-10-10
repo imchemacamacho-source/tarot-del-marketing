@@ -22,12 +22,15 @@ module.exports = async function handler(req, res) {
     return res.status(503).json({ error: 'Lead storage not configured', code: 'WEBHOOK_INVALID_URL' });
   }
 
-  const { name, phone, topic, marketingConsent, registrationId = randomUUID() } = req.body || {};
+  const { name, phone, topic, marketingConsent, email: rawEmail = '', registrationId = randomUUID() } = req.body || {};
+  const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : rawEmail;
   if (typeof name !== 'string' || !name.trim() || name.length > 100 ||
       typeof phone !== 'string' || !/^[+0-9() .-]{8,22}$/.test(phone.trim()) ||
       phone.replace(/\D/g, '').length < 8 ||
       typeof topic !== 'string' || !topic.trim() || topic.length > 120 ||
       typeof marketingConsent !== 'boolean' ||
+      typeof email !== 'string' || email.length > 254 ||
+      (email && !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) ||
       typeof registrationId !== 'string' || !/^[A-Za-z0-9_-]{16,80}$/.test(registrationId)) {
     return res.status(400).json({ error: 'Invalid data', code: 'INVALID_DATA' });
   }
@@ -36,7 +39,7 @@ module.exports = async function handler(req, res) {
     const response = await fetch(webhook.href, {
       method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: name.trim(), phone: phone.trim(), topic: topic.trim(), marketingConsent,
+        name: name.trim(), phone: phone.trim(), topic: topic.trim(), marketingConsent, email,
         registrationId, consentVersion: '2026-10-10',
         createdAt: new Date().toISOString(), source: 'tarot-del-marketing'
       }),
@@ -53,7 +56,8 @@ module.exports = async function handler(req, res) {
     }
     if (!receipt || receipt.ok !== true || receipt.stored !== true ||
         !Number.isInteger(receipt.row) || receipt.row < 2 ||
-        receipt.sheet !== 'Registros' || receipt.registrationId !== registrationId) {
+        receipt.sheet !== 'Registros' || receipt.registrationId !== registrationId ||
+        (email && (receipt.emailStored !== true || receipt.email !== email))) {
       return res.status(502).json({ error: 'Storage unavailable', code: 'WEBHOOK_SAVE_NOT_CONFIRMED' });
     }
     return res.status(200).json({ ok: true, stored: true, registrationId, row: receipt.row });
