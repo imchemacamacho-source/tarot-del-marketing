@@ -8,7 +8,7 @@ Flujo: formulario → `POST /api/lead` en Vercel → `doPost` de Apps Script →
 - `LEADS_WEBHOOK_URL` debe ser la URL HTTPS de la aplicación web terminada en `/exec`, configurada en Vercel para cada entorno que reciba registros. Nunca se incluye en el navegador ni en Git.
 - Apps Script escribe en la hoja indicada en `SPREADSHEET_ID`, dentro de `Registros`. Conserva los doce encabezados existentes, incluyendo Estado del lead y Observaciones, y añade `ID de registro` en M para evitar filas duplicadas al reintentar.
 - Apps Script devuelve JSON con `ok`, `stored`, `row`, `sheet` y `registrationId` solo después de escribir, ejecutar `SpreadsheetApp.flush()` y comprobar la fila. Vercel rechaza HTML, errores de Google y respuestas sin ese comprobante.
-- El formulario mantiene el mismo ID durante un reintento y solo muestra las cartas al confirmar el guardado. El HTML, CSS, cartas y textos de la experiencia se conservan.
+- El formulario mantiene el mismo ID durante un reintento y solo muestra las cartas al confirmar el guardado. Ante un fallo temporal repite automáticamente la solicitud una vez, sin crear una fila adicional. El diseño y las cartas se conservan.
 - Las columnas Carta 1–3 y Clic en WhatsApp no se usan para seguimiento en el formulario actual. Este arreglo registra los datos del formulario y el consentimiento; no atribuye selecciones ni clics que no se enviaron.
 
 ## Publicación de Apps Script (configuración única)
